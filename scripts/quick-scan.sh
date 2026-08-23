@@ -17,13 +17,14 @@ for hdr in "strict-transport-security" "content-security-policy" "x-frame-option
 done
 
 # 2. CORS (preflight con origen arbitrario sobre rutas API comunes)
+CORS_FOUND=0
 for p in /wp-json/ /api/ /api/v1/ /rest/v1/; do
   C=$(curl -sI --max-time 12 "${TARGET}${p}" -H "Origin: https://evil.example.com" 2>/dev/null | grep -i "access-control-allow-origin" | head -1)
   if echo "$C" | grep -qi "evil.example.com"; then
-    say FAIL "CORS refleja origen arbitrario en $p → $C"; FAIL=$((FAIL+1))
+    say FAIL "CORS refleja origen arbitrario en $p → $C"; FAIL=$((FAIL+1)); CORS_FOUND=1
   fi
 done
-[ "$(echo "$C" | wc -c)" -le 1 ] && { say PASS "CORS sin reflejo de origen arbitrario"; PASS=$((PASS+1)); }
+[ "$CORS_FOUND" = "0" ] && { say PASS "CORS sin reflejo de origen arbitrario"; PASS=$((PASS+1)); }
 
 # 3. Enumeración de usuarios (WordPress REST)
 U=$(curl -s --max-time 12 "${TARGET}/wp-json/wp/v2/users" 2>/dev/null | head -c 200)
@@ -53,9 +54,10 @@ if [ "$code" = "200" ]; then
   else say FAIL "login SIN rate limit (10 intentos sin 429)"; FAIL=$((FAIL+1)); fi
 else say PASS "sin wp-login expuesto"; PASS=$((PASS+1)); fi
 
-# 6. DNS/seguridad de correo
-SPF=$(dig TXT "$(echo "$TARGET" | sed -E 's|https?://||;s|/.*||')" +short 2>/dev/null | grep -i "v=spf1")
-DMARC=$(dig TXT "_dmarc.$(echo "$TARGET" | sed -E 's|https?://||;s|/.*||')" +short 2>/dev/null | grep -i "v=DMARC1")
+# 6. DNS/seguridad de correo (SPF/DMARC viven en el apex: quitar www.)
+DOMAIN=$(echo "$TARGET" | sed -E 's|https?://||;s|/.*||;s|^www\.||')
+SPF=$(dig TXT "$DOMAIN" +short 2>/dev/null | grep -i "v=spf1")
+DMARC=$(dig TXT "_dmarc.$DOMAIN" +short 2>/dev/null | grep -i "v=DMARC1")
 [ -n "$SPF" ] && { say PASS "SPF presente"; PASS=$((PASS+1)); } || { say WARN "sin SPF"; WARN=$((WARN+1)); }
 [ -n "$DMARC" ] && { say PASS "DMARC presente ($DMARC)"; PASS=$((PASS+1)); } || { say WARN "sin DMARC"; WARN=$((WARN+1)); }
 
