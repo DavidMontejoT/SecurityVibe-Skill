@@ -47,7 +47,7 @@ done
 code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "${TARGET}/wp-login.php" 2>/dev/null)
 if [ "$code" = "200" ]; then
   RL=$(for i in $(seq 1 10); do curl -s -o /dev/null -w "%{http_code}" --max-time 8 -X POST \
-    "${TARGET}/wp-login.php" -d "log=admin&pwd=test$i&wp-submit=Acceder&testcookie=1" \
+    "${TARGET}/wp-login.php" -d "log=vibecode-audit-nonexistent&pwd=test$i&wp-submit=Acceder&testcookie=1" \
     -H "Cookie: wordpress_test_cookie=WP%20Cookie%20check" 2>/dev/null; done | tr -d ' ' | grep -c 429)
   if [ "$RL" -ge 1 ]; then say PASS "login con rate limit (429 detectado)"; PASS=$((PASS+1));
   else say FAIL "login SIN rate limit (10 intentos sin 429)"; FAIL=$((FAIL+1)); fi

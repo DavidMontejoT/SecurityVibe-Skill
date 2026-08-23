@@ -48,17 +48,21 @@ curl -sI "https://<target>/wp-json/" -H "Origin: https://evil.example.com" | gre
 # y el preflight:
 curl -s -X OPTIONS "https://<target>/api/" -H "Origin: https://evil.example.com" \
   -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: authorization,content-type"
-# ACAO reflejando el origen arbitrario + allow-credentials:true = MEDIO (configuración, no robo directo)
-# Probar también Origin: null. Probar CADA backend por separado (SPA, API, storage, functions).
+# ACAO reflejando el origen arbitrario + allow-credentials:true = severidad según el
+# MECANISMO DE AUTH (ver "Disciplina de severidad"): cookie-auth sin nonce = ALTO;
+# cookie-auth con nonce (WP REST) o Bearer (Supabase) = MEDIO/BAJO. Probar también Origin: null.
 ```
 
 ### 3. Rate limiting (10 peticiones rápidas)
 ```bash
 for i in $(seq 1 10); do
   curl -s -o /dev/null -w "%{http_code} " -X POST "https://<target>/wp-login.php" \
-    -d "log=admin&pwd=test$i&wp-submit=Acceder&testcookie=1" -H "Cookie: wordpress_test_cookie=WP%20Cookie%20check"
+    -d "log=vibecode-audit-nonexistent&pwd=test$i&wp-submit=Acceder&testcookie=1" -H "Cookie: wordpress_test_cookie=WP%20Cookie%20check"
 done
 # 10x200 sin 429 = sin rate limit (ALTO si hay user enum; MEDIO en formularios)
+# Usar un USUARIO INEXISTENTE (nunca log=admin ni cuentas reales): evita lockouts/blacklist
+# de la cuenta real (Wordfence/iThemes) y ruido en los logs del cliente. El limiter suele
+# actuar antes de la verificación de usuario → mismo resultado medible.
 # OJO: los límites están SPLIT — send-side (/recover, /otp) suele tener cooldown,
 # verify/token NO. Probar cada uno por separado.
 ```
@@ -158,7 +162,12 @@ curl -s -o /dev/null -w "%{http_code}\n" "https://<target>/wp-login.php?action=r
 - **Ausencia de ACAO en un GET ≠ "no hay CORS"** — probar OPTIONS preflight, orígenes arbitrarios y cada endpoint.
 - **Ausencia de SPF/DMARC ≠ spoofing demostrado = BAJO** ("protección anti-spoofing ausente").
 - **Formulario roto por RLS = disponibilidad/funcional, no vulnerabilidad de seguridad.**
-- **CORS con reflejo + credentials = MEDIO**, no ALTO: en WP la cookie-auth exige nonce inobtenible cross-origin; en Supabase con Bearer no hay cookies que robar. Documentar con precisión, no alarmismo.
+- **CORS: la severidad depende del MECANISMO DE AUTH, no solo de las cabeceras:**
+  - ACAO reflejado + credentials + API con **cookie-auth SIN nonce/CSRF** que devuelve datos sensibles → **ALTO** (exfiltración autenticada real: un sitio malicioso lee la API con las cookies de la víctima)
+  - ACAO reflejado + credentials + cookie-auth CON nonce (WP REST exige X-WP-Nonce, inobtenible cross-origin) → **MEDIO** (no explotable directo; amplificador si se combina con otro fallo)
+  - ACAO reflejado + credentials + auth por **Bearer token** (Supabase: el token vive en localStorage, no viaja cross-origin) → **MEDIO/BAJO**
+  - ACAO reflejado sin credentials → **BAJO** (solo configuración)
+  Documentar con precisión, no alarmismo: el "robo de sesión por CORS" requiere cookie-auth sin anti-CSRF, y ninguno de los stacks auditados (WP REST con nonce, Supabase con Bearer) lo permite.
 - **Rate limit: probar cada endpoint por separado** (send vs verify) antes de afirmar ausencia.
 - **No enviar `Authorization: Bearer ` vacío** en probes RLS: PGRST301 corrompe la clasificación. Omitir el header para probar como anon.
 - **Límites de peticiones en pruebas:** ≤30 por endpoint, datos sintéticos, nada destructivo, emails solo a buzones controlados.

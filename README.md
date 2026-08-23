@@ -62,6 +62,10 @@ Cada auditoría entrega: resumen ejecutivo (1 página, no técnico) → hallazgo
 
 Metodología derivada de pentests externos reales (black-box, sin credenciales) sobre aplicaciones en producción: una SPA React + Supabase (Lovable), un WordPress + Elementor detrás de CloudFront/EC2, y un ecosistema CMS (HubSpot) + AWS. El patrón común de los tres es la base del checklist.
 
+## Licencia
+
+**CC BY-NC 4.0** (Creative Commons Attribution-NonCommercial 4.0 International): puedes compartir, citar y usar este material internamente; **no está permitido el uso comercial** sin autorización por escrito del autor. Texto legal completo en `LICENSE`.
+
 ## Aviso
 
 Esta guía cubre lo básico de aplicaciones web. Para aplicaciones con datos sensibles (datos personales, pagos, expedientes) se requiere además una auditoría completa y revisión de cumplimiento normativo según aplique (Ley 1581 / GDPR). Uso únicamente sobre sistemas con autorización.
