@@ -17,15 +17,25 @@ Las apps vibecodeadas comparten el mismo patrón de riesgo: **seguridad post-hoc
 
 | Archivo | Descripción |
 |---|---|
-| `SKILL.md` | Metodología completa: 12 checks de auditoría rápida con comandos reales, hardening por stack (Supabase, WordPress, Next.js/Vercel), disciplina de severidad calibrada, entrega con formato de reporte profesional + retest |
-| `templates/checklist-cliente.md` | Checklist de seguridad en lenguaje simple, exportable y entregable al cliente final |
-| `scripts/quick-scan.sh` | Escáner de 1 minuto: cabeceras, CORS, enumeración de usuarios, rate limiting, archivos sensibles, backups, SPF/DMARC |
+| `vibecode-web-hardening/SKILL.md` | Metodología completa: 12 checks de auditoría rápida con comandos reales, hardening por stack (Supabase, WordPress, Next.js/Vercel), disciplina de severidad calibrada, entrega con formato de reporte profesional + retest |
+| `vibecode-web-hardening/templates/checklist-cliente.md` | Checklist de seguridad en lenguaje simple, exportable y entregable al cliente final |
+| `vibecode-web-hardening/scripts/quick-scan.sh` | Escáner de 1 minuto: cabeceras, CORS, enumeración de usuarios, rate limiting, archivos sensibles, backups, SPF/DMARC |
+
+## Instalación (Hermes Agent)
+
+La skill se instala copiando la carpeta a la ruta de skills de Hermes:
+
+```bash
+cp -r vibecode-web-hardening ~/.hermes/skills/security/
+```
+
+El agente la detecta automáticamente. Luego se activa con frases como "protegé mi web" o "auditá esta app".
 
 ## Uso rápido
 
 ```bash
 # Escaneo inicial (1 minuto, no destructivo):
-bash scripts/quick-scan.sh https://www.ejemplo.com
+bash vibecode-web-hardening/scripts/quick-scan.sh https://www.ejemplo.com
 
 # Auditoría completa: seguir los 12 checks de SKILL.md
 # Salida: resumen ejecutivo + hallazgos por severidad con evidencia reproducible
